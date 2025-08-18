@@ -1,4 +1,4 @@
-Perfect, let’s convert and expand your Race language specification into English. Here’s a full draft you can use as your .md file:
+
 
 
 ---
