@@ -1,0 +1,92 @@
+(* --- MODULES --- *)
+module        = "module", identifier, { import_stmt }, { top_level_decl } ;
+import_stmt   = "import", identifier, ";" ;
+
+(* --- TOP LEVEL DECLARATIONS --- *)
+top_level_decl = car_decl | struct_decl | engine_decl | system_decl | function_decl | track_decl | race_decl ;
+
+(* --- IDENTIFIERS --- *)
+identifier    = letter, { letter | digit | "_" } ;
+
+(* --- LITERALS --- *)
+int_lit      = digit, { digit } ;
+float_lit    = digit, { digit }, ".", digit, { digit } ;
+string_lit   = '"', { any_char - '"' }, '"' ;
+bool_lit     = "true" | "false" ;
+unit         = "kg" | "m" | "s" | "Nm" | "hp" ;
+
+number       = (int_lit | float_lit), [unit] ;
+
+(* --- TYPES --- *)
+type         = "int" | "float" | "bool" | "string" | vec_type | quat_type | custom_type ;
+vec_type     = "vec2" | "vec3" | "vec4" ;
+quat_type    = "quat" ;
+custom_type  = identifier ;
+
+(* --- STRUCTS --- *)
+struct_decl  = "struct", identifier, "{", { field_decl }, "}" ;
+field_decl   = identifier, ":", type, ";" ;
+
+(* --- CARS & ENGINES --- *)
+car_decl     = "car", identifier, "{", { car_field }, "}" ;
+car_field    = identifier, ":", expression, ";" ;
+engine_decl  = "engine", identifier, "{", { engine_field }, "}" ;
+engine_field = identifier, ":", expression, ";" ;
+
+(* --- TRACK & RACE --- *)
+track_decl   = "track", identifier, "{", { track_field }, "}" ;
+track_field  = identifier, ":", expression, ";" ;
+race_decl    = "race", identifier, "{", { race_field }, "}" ;
+race_field   = identifier, ":", expression, ";" ;
+
+(* --- FUNCTIONS --- *)
+function_decl = "fn", identifier, "(", [ param_list ], ")", [ "->", type ], block ;
+param_list    = param, { ",", param } ;
+param         = identifier, ":", type ;
+
+(* --- SYSTEMS --- *)
+system_decl   = "system", identifier, "(", identifier, ":", type, ")", "query", "{", component_list, "}", [ "parallel" ], block ;
+component_list = identifier, { ",", identifier } ;
+
+(* --- BLOCKS & STATEMENTS --- *)
+block         = "{", { statement }, "}" ;
+statement     = var_decl | assignment | if_stmt | for_stmt | expr_stmt | return_stmt ;
+
+var_decl      = "let", [ "mut" ], identifier, ":", type, "=", expression, ";" ;
+assignment    = identifier, ("=" | "+=" | "-=" | "*=" | "/="), expression, ";" ;
+if_stmt       = "if", "(", expression, ")", block, [ "else", block ] ;
+for_stmt      = "for", identifier, "in", expression, block ;
+return_stmt   = "return", [ expression ], ";" ;
+expr_stmt     = expression, ";" ;
+
+(* --- EXPRESSIONS --- *)
+expression    = literal
+              | identifier
+              | function_call
+              | binary_expr
+              | unary_expr
+              | array_expr
+              | struct_init
+              | member_access ;
+
+function_call = identifier, "(", [ arg_list ], ")" ;
+arg_list      = expression, { ",", expression } ;
+
+binary_expr   = expression, binary_op, expression ;
+binary_op     = "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "&&" | "||" ;
+
+unary_expr    = unary_op, expression ;
+unary_op     = "+" | "-" | "!" ;
+
+array_expr    = "[", [ expression, { ",", expression } ], "]" ;
+struct_init   = identifier, "{", [ init_field, { ",", init_field } ], "}" ;
+init_field    = identifier, ":", expression ;
+
+member_access = expression, ".", identifier ;
+
+(* --- LITERALS --- *)
+literal       = number | string_lit | bool_lit ;
+
+(* --- SHADERS --- *)
+shader_decl   = "@shader(", shader_type, ")", function_decl ;
+shader_type   = "vertex" | "fragment" | "compute" ;
