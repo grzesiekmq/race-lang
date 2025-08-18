@@ -1,102 +1,157 @@
-<program>           ::= <module_list>
+<module>           ::= "module" <identifier> <import_list> <top_level_decl_list>
 
-<module_list>       ::= <module_list> <module>
+<import_list>      ::= <import_list> <import_stmt>
                      | /* empty */
 
-<module>            ::= "module" <IDENT> "{" <module_body> "}"
+<import_stmt>      ::= "import" <identifier> ";"
 
-<module_body>       ::= <struct_list> <fn_list> <system_list>
+<top_level_decl_list> ::= <top_level_decl_list> <top_level_decl>
+                        | /* empty */
 
-<struct_list>       ::= <struct_list> <struct_decl>
+<top_level_decl>   ::= <car_decl>
+                     | <struct_decl>
+                     | <engine_decl>
+                     | <system_decl>
+                     | <function_decl>
+                     | <track_decl>
+                     | <race_decl>
+                     | <shader_decl>
+
+<identifier>       ::= <letter> <identifier_tail>
+
+<identifier_tail>  ::= <identifier_tail> <letter_or_digit_or_underscore>
                      | /* empty */
 
-<struct_decl>       ::= "struct" <IDENT> "{" <field_list> "}"
+<letter_or_digit_or_underscore> ::= <letter> | <digit> | "_"
 
-<field_list>        ::= <field_list> <field>
+<int_lit>          ::= <digit> <int_lit_tail>
+<int_lit_tail>     ::= <digit> <int_lit_tail>
                      | /* empty */
 
-<field>             ::= <IDENT> ":" <type> ";"
-
-<fn_list>           ::= <fn_list> <fn_decl>
+<float_lit>        ::= <digit> <digit_list> "." <digit> <digit_list>
+<digit_list>       ::= <digit> <digit_list>
                      | /* empty */
 
-<fn_decl>           ::= "fn" <IDENT> "(" <param_list_opt> ")" <block>
-
-<param_list_opt>    ::= <param_list>
+<string_lit>       ::= '"' <string_char_list> '"'
+<string_char_list> ::= <string_char> <string_char_list>
                      | /* empty */
 
-<param_list>        ::= <param_list> "," <param>
-                     | <param>
+<bool_lit>         ::= "true" | "false"
 
-<param>             ::= <IDENT> ":" <type>
+<unit>             ::= "kg" | "m" | "s" | "Nm" | "hp"
 
-<system_list>       ::= <system_list> <system_decl>
+<number>           ::= <int_lit> <unit_opt>
+                     | <float_lit> <unit_opt>
+
+<unit_opt>         ::= <unit>
                      | /* empty */
 
-<system_decl>       ::= "system" <IDENT> "(" <param_list_opt> ")" "query" "{" <query_list> "}" <block>
+<type>             ::= "int"
+                     | "float"
+                     | "bool"
+                     | "string"
+                     | <vec_type>
+                     | <quat_type>
+                     | <custom_type>
 
-<query_list>        ::= <query_list> "," <IDENT>
-                     | <IDENT>
+<vec_type>         ::= "vec2" | "vec3" | "vec4"
+<quat_type>        ::= "quat"
+<custom_type>      ::= <identifier>
 
-<block>             ::= "{" <stmt_list> "}"
-
-<stmt_list>         ::= <stmt_list> <statement>
+<struct_decl>      ::= "struct" <identifier> "{" <field_list> "}"
+<field_list>       ::= <field_list> <field_decl>
                      | /* empty */
+<field_decl>       ::= <identifier> ":" <type> ";"
 
-<statement>         ::= <expr_stmt>
-                     | <var_decl>
+<car_decl>         ::= "car" <identifier> "{" <car_field_list> "}"
+<car_field_list>   ::= <car_field_list> <car_field>
+                     | /* empty */
+<car_field>        ::= <identifier> ":" <expression> ";"
+
+<engine_decl>      ::= "engine" <identifier> "{" <engine_field_list> "}"
+<engine_field_list>::= <engine_field_list> <engine_field>
+                     | /* empty */
+<engine_field>     ::= <identifier> ":" <expression> ";"
+
+<track_decl>       ::= "track" <identifier> "{" <track_field_list> "}"
+<track_field_list> ::= <track_field_list> <track_field>
+                     | /* empty */
+<track_field>      ::= <identifier> ":" <expression> ";"
+
+<race_decl>        ::= "race" <identifier> "{" <race_field_list> "}"
+<race_field_list>  ::= <race_field_list> <race_field>
+                     | /* empty */
+<race_field>       ::= <identifier> ":" <expression> ";"
+
+<function_decl>    ::= "fn" <identifier> "(" <param_list_opt> ")" <return_type_opt> <block>
+<param_list_opt>   ::= <param_list> | /* empty */
+<param_list>       ::= <param_list> "," <param> | <param>
+<param>            ::= <identifier> ":" <type>
+<return_type_opt>  ::= "->" <type> | /* empty */
+
+<system_decl>      ::= "system" <identifier> "(" <identifier> ":" <type> ")" "query" "{" <component_list> "}" <parallel_opt> <block>
+<component_list>   ::= <component_list> "," <identifier> | <identifier>
+<parallel_opt>     ::= "parallel" | /* empty */
+
+<block>            ::= "{" <stmt_list> "}"
+<stmt_list>        ::= <stmt_list> <statement> | /* empty */
+<statement>        ::= <var_decl>
+                     | <assignment>
                      | <if_stmt>
-                     | <while_stmt>
                      | <for_stmt>
+                     | <expr_stmt>
                      | <return_stmt>
                      | <block>
 
-<expr_stmt>         ::= <expr> ";"
+<var_decl>         ::= "let" <mut_opt> <identifier> ":" <type> "=" <expression> ";"
+<mut_opt>          ::= "mut" | /* empty */
 
-<var_decl>          ::= "let" <IDENT> "=" <expr> ";"
-                     | "let" "mut" <IDENT> "=" <expr> ";"
+<assignment>       ::= <identifier> <assign_op> <expression> ";"
+<assign_op>        ::= "=" | "+=" | "-=" | "*=" | "/="
 
-<if_stmt>           ::= "if" "(" <expr> ")" <statement> "else" <statement>
-                     | "if" "(" <expr> ")" <statement>
+<if_stmt>          ::= "if" "(" <expression> ")" <block> <else_block_opt>
+<else_block_opt>   ::= "else" <block> | /* empty */
 
-<while_stmt>        ::= "while" "(" <expr> ")" <statement>
+<for_stmt>         ::= "for" <identifier> "in" <expression> <block>
 
-<for_stmt>          ::= "for" "(" <stmt_list> <expr> ";" <expr> ")" <statement>
+<return_stmt>      ::= "return" <expression_opt> ";"
+<expression_opt>   ::= <expression> | /* empty */
 
-<return_stmt>       ::= "return" <expr> ";"
+<expr_stmt>        ::= <expression> ";"
 
-<expr>              ::= <expr> "+" <expr>
-                     | <expr> "-" <expr>
-                     | <expr> "*" <expr>
-                     | <expr> "/" <expr>
-                     | <expr> "." <IDENT>    -- member access
-                     | "(" <expr> ")"
-                     | <literal>
-                     | <IDENT>
-                     | <fn_call>
+<expression>       ::= <literal>
+                     | <identifier>
+                     | <function_call>
+                     | <binary_expr>
+                     | <unary_expr>
+                     | <array_expr>
+                     | <struct_init>
+                     | <member_access>
 
-<fn_call>           ::= <IDENT> "(" <arg_list_opt> ")"
+<function_call>    ::= <identifier> "(" <arg_list_opt> ")"
+<arg_list_opt>     ::= <arg_list> | /* empty */
+<arg_list>         ::= <arg_list> "," <expression> | <expression>
 
-<arg_list_opt>      ::= <arg_list>
-                     | /* empty */
+<binary_expr>      ::= <expression> <binary_op> <expression>
+<binary_op>        ::= "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "&&" | "||"
 
-<arg_list>          ::= <arg_list> "," <expr>
-                     | <expr>
+<unary_expr>       ::= <unary_op> <expression>
+<unary_op>         ::= "+" | "-" | "!"
 
-<literal>           ::= <NUMBER>
-                     | <STRING>
-                     | <TRUE>
-                     | <FALSE>
+<array_expr>       ::= "[" <array_elements_opt> "]"
+<array_elements_opt>::= <array_elements> | /* empty */
+<array_elements>   ::= <array_elements> "," <expression> | <expression>
 
-<type>              ::= "f32"
-                     | "f64"
-                     | "i32"
-                     | "i64"
-                     | "bool"
-                     | "vec2"
-                     | "vec3"
-                     | "vec4"
-                     | "quat"
-                     | "mat4"
-                     | "q24.8"
-                     | <IDENT>  -- struct or custom type
+<struct_init>      ::= <identifier> "{" <init_field_list_opt> "}"
+<init_field_list_opt>::= <init_field_list> | /* empty */
+<init_field_list>  ::= <init_field_list> "," <init_field> | <init_field>
+<init_field>       ::= <identifier> ":" <expression>
+
+<member_access>    ::= <expression> "." <identifier>
+
+<literal>          ::= <number>
+                     | <string_lit>
+                     | <bool_lit>
+
+<shader_decl>      ::= "@shader(" <shader_type> ")" <function_decl>
+<shader_type>      ::= "vertex" | "fragment" | "compute"
