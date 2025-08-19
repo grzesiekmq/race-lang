@@ -1,5 +1,5 @@
 example Race program demonstrating a minimal racing simulation using the spec:
-
+```
 // File: demo_race.race
 module DemoRace
 
@@ -104,6 +104,7 @@ fn main() {
     })
 }
 
+```
 ✅ Features Demonstrated:
 
 1. Engine with torque curve.
