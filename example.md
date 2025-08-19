@@ -7,8 +7,10 @@ import Physics
 import Rendering
 import Input
 
-// ----------------------
-// Define Engine
+// lacks define Engine
+
+ ----------------------
+// Instantiate Engine
 // ----------------------
 engine V8 {
     max_rpm: 8000
@@ -49,6 +51,8 @@ struct Car {
     wheels: [4]Wheel
     body: RigidBody
 }
+
+// Instantiate Car
 
 car PlayerCar = Car {
     engine: V8,
@@ -105,6 +109,7 @@ fn main() {
 }
 
 ```
+
 ✅ Features Demonstrated:
 
 1. Engine with torque curve.
