@@ -1,5 +1,5 @@
 example Race program demonstrating a minimal racing simulation using the spec:
-```
+```rs
 // File: demo_race.race
 module DemoRace
 
