@@ -1,0 +1,44 @@
+module TestRace
+
+import Test;
+
+// struct declaration
+
+
+struct myEngine {
+    horsepower: i32;
+    torque: f32;
+}
+
+
+
+ engine myEngine {
+    horsepower: 450;
+    torque: 550.5;
+
+ }
+
+// print engine params
+fn main(){
+    let result : string = myEngine.horsepower + myEngine.torque;
+    println(result);
+
+    println(myEngine.horsepower);
+    println(myEngine.torque);
+}
+
+
+// expression
+
+
+
+
+// car instance
+
+car MySuperCar {
+    maxSpeed: 320;
+    weight: 1200kg;
+    engine: myEngine;
+    color: "red";
+}
+
