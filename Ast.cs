@@ -1,37 +1,52 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 // --- AST Base Nodes ---
-abstract class AstNode {}
+abstract class AstNode { }
 
-abstract class ExprNode : AstNode {}
+abstract class ExprNode : AstNode { }
 
-class ProgramNode : AstNode{
-    public List<AstNode> Items {get; set;}
+class ProgramNode : AstNode
+{
+    public List<AstNode> Items { get; set; }
+}
+
+class TopLevelNode : AstNode
+{
+    public List<AstNode> Items { get; set; }
 }
 
 // --- Literals ---
-class NumberLiteralExpr : ExprNode
+class LiteralExpr : ExprNode {
+
+}
+
+class NumberLiteralExpr : LiteralExpr
 {
     public string Value { get; set; }
 }
 
-class StringLiteralExpr : ExprNode
+class StringLiteralExpr : LiteralExpr
 {
     public string Value { get; set; }
 }
 
-class BoolLiteralExpr : ExprNode
+class BoolLiteralExpr : LiteralExpr
 {
     public bool Value { get; set; }
+}
+
+class ParenExpr : ExprNode{
+
 }
 
 // --- Identifiers ---
 class IdentifierExprNode : ExprNode
 {
     public string Name { get; set; }
-    public string ID {get; set;}
+    public string ID { get; set; }
 }
 
 // --- Unary Expressions ---
@@ -59,14 +74,17 @@ class PostfixExprNode : ExprNode
 // --- Instances ---
 abstract class InstanceNode : AstNode
 {
-    public string Kind {get;set;}
+    public string Kind { get; set; }
     public string Name { get; set; }
-    public List<FieldValueNode> Fields { get; } = new();
+    public List<FieldValueNode> Fields { get;set; } = new();
 }
 
 class CarInstanceNode : InstanceNode { }
+
 class EngineInstanceNode : InstanceNode { }
+
 class TrackInstanceNode : InstanceNode { }
+
 class RaceInstanceNode : InstanceNode { }
 
 class FieldValueNode : AstNode
@@ -79,13 +97,29 @@ class FieldValueNode : AstNode
 class StructDeclNode : AstNode
 {
     public string Name { get; set; }
-    public List<FieldDeclNode> Fields { get; } = new();
+    public List<FieldDeclNode> Fields { get;set; } = new();
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"struct {Name}");
+        foreach (var f in Fields)
+        {
+            sb.AppendLine($"  {f.Type} {f.Name};");
+        }
+        return sb.ToString();
+    }
 }
 
 class FieldDeclNode : AstNode
 {
     public string Name { get; set; }
     public string Type { get; set; }
+
+    public override string ToString()
+    {
+        return $"{Name} {Type}";
+    }
 }
 
 // --- Variable Declarations ---
@@ -94,7 +128,7 @@ class VarDeclNode : AstNode
     public string Name { get; set; }
     public string Type { get; set; }
     public bool IsMutable { get; set; }
-    public AstNode? Initializer {get; set;}
+    public AstNode? Initializer { get; set; }
 }
 
 // --- Assignments ---
@@ -112,28 +146,32 @@ class SystemDeclNode : AstNode
     public List<VarDeclNode> Params { get; set; } = new();
     public List<AstNode> Statements { get; set; } = new();
     public bool IsParallel { get; set; }
+}
+
+class StatementNode : AstNode { }
+
+class IfNode : StatementNode{
+
+}
+class ForNode : StatementNode{
 
 }
 
+class ExprStmtNode : StatementNode{
 
-
-class StatementNode : AstNode{
+}
+class ReturnNode : StatementNode{
 
 }
 
- class StringNode : AstNode
+class MemberAccessNode : ExprNode
 {
-    public string Code;
-    public StringNode(string code) { Code = code; }
+    public ExprNode Target { get; set; }
+    public string Member { get; set; }
 }
 
-class MemberAccessNode : ExprNode {
-    public ExprNode Target {get; set;}
-    public string Member {get; set;}
-}
-
-
-class FunctionCallNode : ExprNode {
-    public ExprNode Function {get; set;}
-    public List<ExprNode> Arguments {get; set;}
+class FunctionCallNode : ExprNode
+{
+    public ExprNode Function { get; set; }
+    public List<ExprNode> Arguments { get; set; }
 }

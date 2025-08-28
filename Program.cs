@@ -1,6 +1,6 @@
 ﻿using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
@@ -45,9 +45,13 @@ class Program
 
         var parser = new RaceLangParser(tokens);
 
-        var tree = parser.program();
+        // var tree = parser.program();
 
-        var visitor = new CodeGen();
+        var tree = parser.top_level();
+
+        var visitor = new AstVisitor();
+
+        var codegen = new CodeGen();
 
         // Console.WriteLine(tree.ToStringTree());
 
@@ -61,8 +65,23 @@ class Program
             Console.WriteLine($"{t.Text} : {t.Type}");
         }
         */
+        var s = visitor.Visit(tree);
 
-        // var structDecl = (StructDeclNode) visitor.Visit(tree);
+        Console.WriteLine("s " + s);
+
+        foreach (var itemCtx in tree.top_level_item())
+        {
+            if (itemCtx.struct_decl() != null)
+            {
+                string item = codegen.GenStructDecl(itemCtx.struct_decl());
+                sb.AppendLine(item);
+            }
+           else if(itemCtx.engine_instance() != null){
+                string item = codegen.GenEngineInstance(itemCtx.engine_instance());
+                Console.WriteLine("item " + item);
+                sb.AppendLine(item);
+            }
+        }
 
         // var addSub = (BinaryExprNode) visitor.Visit(expression);
         //  var left = (NumberLiteralExpr) addSub.Left;
@@ -81,11 +100,12 @@ class Program
                 "i32" => "int",
                 "f32" => "float",
             };
+
         // string fieldsCode = string.Join("\n", structDecl.Fields.Select(f =>
-        //             $"{MapType(f.Type)} {f.Name};"
+        // $"{MapType(f.Type)} {f.Name};"
         // ));
 
-        // Console.WriteLine(fieldsCode);
+        Console.WriteLine("item " + sb.ToString());
 
         // hardcoded temporarily for reference
         // to convert to dynamic code
@@ -133,11 +153,12 @@ int main() {
     return 0;
 }
 ";
+
         // Console.WriteLine(code);
 
         var cFile = "test.c";
         var outputFile = args[2];
-        File.WriteAllText(cFile, code);
+        File.WriteAllText(cFile, sb.ToString());
 
         // Sprawdzenie, czy plik C istnieje
         if (!File.Exists(cFile))
@@ -145,9 +166,6 @@ int main() {
             Console.WriteLine($"File {cFile} not found!");
             return;
         }
-
-
-
 
         // Wywołanie GCC
         var gcc = new Process
@@ -186,7 +204,5 @@ int main() {
             Console.WriteLine(stderr);
 
         Console.WriteLine($"Binary created: {outputFile}");
-
-
     }
 }

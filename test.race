@@ -1,6 +1,8 @@
-module TestRace
+// module TestRace
 
-import Test;
+// import Test;
+
+// TODO: add support for modules and imports
 
 // struct declaration
 
@@ -11,6 +13,7 @@ struct myEngine {
 }
 
 
+// engine instance
 
  engine myEngine {
     horsepower: 450;
