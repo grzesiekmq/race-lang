@@ -167,6 +167,7 @@ class StatementNode : AstNode {
 class IfNode : StatementNode{
     public ExprNode Condition { get; set; }
     public BlockNode ThenBlock { get; set; }
+    public BlockNode ElseBlock { get; set; }
 }
 
 class ForNode : StatementNode{

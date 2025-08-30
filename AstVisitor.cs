@@ -261,8 +261,13 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     public override AstNode VisitComponent_list(RaceLangParser.Component_listContext context)
     {
         var listNode = new ComponentListNode();
-        foreach (var comp in context.)
-            listNode.Components.Add(Visit(comp) as AstNode); // lub konkretny typ
+        listNode.Components.Add(new IdentifierExprNode { Name = context.IDENTIFIER(0).GetText() });
+
+        for (int i = 1; i < context.IDENTIFIER().Length; i++)
+        {
+            
+            listNode.Components.Add(new IdentifierExprNode{Name = context.IDENTIFIER(i).GetText()}); // lub konkretny typ
+        }
         return listNode;
     }
 
@@ -302,10 +307,11 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
         var ifNode = new IfNode
         {
             Condition = Visit(context.expression()) as ExprNode,
-            ThenBlock = Visit(context.block()) as BlockNode,
+            ThenBlock = Visit(context.block(0)) as BlockNode,
+        ElseBlock = Visit(context.block(1)) as BlockNode
         };
-        if (context.else_block() != null)
-            ifNode.ElseBlock = Visit(context.else_block()) as BlockNode;
+
+            
         return ifNode;
     }
     // alias
@@ -316,7 +322,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
 
     public override AstNode VisitImport_stmt(RaceLangParser.Import_stmtContext context)
     {
-        return new ImportNode { ModuleName = context.STRING().GetText() };
+        return new ImportNode { ModuleName = context.IDENTIFIER().GetText() };
     }
 
     public override AstNode VisitModule(RaceLangParser.ModuleContext context)
