@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
+using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using Generated;
 
@@ -11,6 +12,8 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     // TODO: complete visit program
     public override AstNode VisitProgram(RaceLangParser.ProgramContext ctx)
     {
+        Console.WriteLine("visiting program");
+
         foreach (var module in ctx.module())
         {
             Visit(module);
@@ -21,20 +24,22 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     // ------------ TOP LEVEL ------------
     public override AstNode VisitTop_level(RaceLangParser.Top_levelContext ctx)
     {
+        Console.WriteLine("visiting top level");
+
         var topLevel = new TopLevelNode();
         foreach (var itemCtx in ctx.top_level_item())
         {
             var item = Visit(itemCtx);
-            if (topLevel.Items != null)
-            {
-                topLevel.Items.Add(item);
-            }
+
+            topLevel.Items.Add(item);
         }
         return topLevel;
     }
 
     public override AstNode VisitTop_level_item(RaceLangParser.Top_level_itemContext ctx)
     {
+        Console.WriteLine("visiting top level item");
+
         return Visit(ctx.GetChild(0));
     }
 
@@ -47,9 +52,11 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
 */
     public override AstNode VisitStruct_decl(RaceLangParser.Struct_declContext ctx)
     {
+        Console.WriteLine("visiting struct decl");
+
         var structDecl = new StructDeclNode { Name = ctx.IDENTIFIER()?.GetText() };
 
-        Console.WriteLine("struct decl: " + structDecl);
+        // Console.WriteLine("struct decl: " + structDecl);
 
         var fields = ctx.field_decl();
         if (fields != null)
@@ -62,7 +69,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
 
                 // Console.WriteLine("added field " + fieldNode);
             }
-            Console.WriteLine("fields count " + structDecl.Fields.Count);
+            // Console.WriteLine("fields count " + structDecl.Fields.Count);
         }
 
         return structDecl;
@@ -83,6 +90,8 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     // ------------ SYSTEMS ------------
     public override AstNode VisitSystem_decl(RaceLangParser.System_declContext ctx)
     {
+        Console.WriteLine("visiting system decl");
+
         foreach (var stmt in ctx.statement())
             Visit(stmt);
         return null;
@@ -94,36 +103,35 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
         IEnumerable<RaceLangParser.Field_valueContext> fields,
         string kind
     )
-
     {
         InstanceNode instanceNode = null;
 
-        if (kind == "car"){
-
-         instanceNode = new CarInstanceNode { Name = name };
-    }
-    else if (kind == "engine"){
+        if (kind == "car")
+        {
+            instanceNode = new CarInstanceNode { Name = name };
+        }
+        else if (kind == "engine")
+        {
             instanceNode = new EngineInstanceNode { Name = name };
         }
-        else if (kind == "track"){
+        else if (kind == "track")
+        {
             instanceNode = new TrackInstanceNode { Name = name };
         }
-        else if (kind == "race"){
+        else if (kind == "race")
+        {
             instanceNode = new RaceInstanceNode { Name = name };
         }
-        if(fields != null){
-
-        foreach (var f in fields){
-
-            instanceNode.Fields.Add(
-                Visit(f) as FieldValueNode);
-
+        if (fields != null)
+        {
+            foreach (var f in fields)
+            {
+                instanceNode.Fields.Add(Visit(f) as FieldValueNode);
+            }
         }
-        }
-        Console.WriteLine("instance node fields count " + instanceNode.Fields.Count);
+        // Console.WriteLine("instance node fields count " + instanceNode.Fields.Count);
         return instanceNode;
     }
-    
 
     public override AstNode VisitCar_instance(RaceLangParser.Car_instanceContext ctx) =>
         BuildInstance(ctx.IDENTIFIER().GetText(), ctx.field_value(), "car");
@@ -137,30 +145,59 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     public override AstNode VisitRace_instance(RaceLangParser.Race_instanceContext ctx) =>
         BuildInstance(ctx.IDENTIFIER().GetText(), ctx.field_value(), "race");
 
-
-    
-
     public override AstNode VisitField_value(RaceLangParser.Field_valueContext ctx)
     {
-        return Visit(ctx.expression()) as FieldValueNode;
+        var fieldValue = new FieldValueNode
+        {
+            Name = ctx.name_token().GetText(),
+            ValueNode = new NumberLiteralExpr { Value = ctx.primary_expr().GetText() },
+        };
+        return fieldValue;
+    }
 
+    public override AstNode VisitFunction_decl([NotNull] RaceLangParser.Function_declContext ctx)
+    {
+        Console.WriteLine("visiting fn decl");
+
+        var fnDecl = new FnDeclNode
+        {
+            Name = ctx.IDENTIFIER().GetText(),
+            Type = ctx.type().GetText(),
+        };
+
+        foreach (var stmt in ctx.block().statement())
+        {
+            var stmtNode = Visit(stmt) as StatementNode;
+            fnDecl.Statements.Add(stmtNode);
+        }
+
+        return fnDecl;
     }
 
     // ------------ STATEMENTS ------------
     public override AstNode VisitVar_decl_stmt(RaceLangParser.Var_decl_stmtContext ctx)
     {
-        if (ctx.expression() != null){
+        Console.WriteLine("visiting var decl");
 
-          return  Visit(ctx.expression()) as VarDeclNode;
+        if (ctx.primary_expr() != null)
+        {
+            var varDecl = new VarDeclNode
+            {
+                Name = ctx.IDENTIFIER().GetText(),
+                Type = ctx.type().GetText(),
+                IsMutable = ctx.GetText().Contains("mut"),
+                Initializer = Visit(ctx.primary_expr()) as LiteralExpr,
+            };
+            return varDecl;
         }
         return null;
-
     }
 
     public override AstNode VisitAssignment(RaceLangParser.AssignmentContext ctx)
     {
-       return Visit(ctx.expression()) as AssignmentNode;
+        Console.WriteLine("visiting assignment");
 
+        return Visit(ctx.expression()) as AssignmentNode;
     }
 
     public override AstNode VisitStatement(RaceLangParser.StatementContext ctx)
@@ -178,6 +215,196 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
         if (ctx.return_stmt() != null)
             return Visit(ctx.return_stmt()) as ReturnNode;
         return null;
+    }
+
+    public override AstNode VisitExpression_stmt(
+        [NotNull] RaceLangParser.Expression_stmtContext ctx
+    )
+    {
+        var exprNode = Visit(ctx.expression());
+
+        if (exprNode is FunctionCallNode fnCall)
+        {
+            return fnCall;
+        }
+        return new ExprStmtNode { Expression = exprNode as ExprNode };
+    }
+
+    public override AstNode VisitExpression([NotNull] RaceLangParser.ExpressionContext ctx)
+    {
+        if (ctx.expr1() != null)
+            return Visit(ctx.expr1());
+        if (ctx.postfix_expr() != null)
+            return Visit(ctx.postfix_expr());
+        if (ctx.primary_expr() != null)
+            return Visit(ctx.primary_expr());
+
+        return null;
+    }
+
+    public override AstNode VisitArray_expr(RaceLangParser.Array_exprContext context)
+    {
+        var arrNode = new ArrayExprNode();
+        foreach (var e in context.expression())
+            arrNode.Elements.Add(Visit(e) as ExprNode);
+        return arrNode;
+    }
+
+    public override AstNode VisitBlock(RaceLangParser.BlockContext context)
+    {
+        var blockNode = new BlockNode();
+        foreach (var stmtCtx in context.statement())
+            blockNode.Statements.Add(Visit(stmtCtx) as StatementNode);
+        return blockNode;
+    }
+
+    public override AstNode VisitComponent_list(RaceLangParser.Component_listContext context)
+    {
+        var listNode = new ComponentListNode();
+        foreach (var comp in context.)
+            listNode.Components.Add(Visit(comp) as AstNode); // lub konkretny typ
+        return listNode;
+    }
+
+    //    traditional for( ; ; )
+
+    /* public override AstNode VisitFor_stmt(RaceLangParser.For_stmtContext context)
+    {
+        var forNode = new ForNode
+        {
+            Init = Visit(context.init_stmt()) as StatementNode,
+            Condition = Visit(context.condition_expr()) as ExprNode,
+            Update = Visit(context.update_stmt()) as StatementNode,
+            Body = Visit(context.block()) as BlockNode,
+        };
+        return forNode;
+    } */
+
+    // attention VisitFor is for "for in"
+    public override AstNode VisitFor_stmt([NotNull] RaceLangParser.For_stmtContext context)
+    {
+        var forInNode = new ForInNode
+        {
+            IteratorName = context.IDENTIFIER().GetText(),
+            Collection = Visit(context.expression()) as ExprNode
+
+        };
+
+        foreach(var stmt in context.block().statement()){
+            forInNode.Body.Add(Visit(stmt) as StatementNode);
+        }
+
+        return forInNode;
+    }
+
+    public override AstNode VisitIf_stmt(RaceLangParser.If_stmtContext context)
+    {
+        var ifNode = new IfNode
+        {
+            Condition = Visit(context.expression()) as ExprNode,
+            ThenBlock = Visit(context.block()) as BlockNode,
+        };
+        if (context.else_block() != null)
+            ifNode.ElseBlock = Visit(context.else_block()) as BlockNode;
+        return ifNode;
+    }
+    // alias
+    public override AstNode VisitArrayExpr(RaceLangParser.ArrayExprContext context)
+    {
+        return VisitArray_expr(context.array_expr());
+    }
+
+    public override AstNode VisitImport_stmt(RaceLangParser.Import_stmtContext context)
+    {
+        return new ImportNode { ModuleName = context.STRING().GetText() };
+    }
+
+    public override AstNode VisitModule(RaceLangParser.ModuleContext context)
+    {
+        var moduleNode = new ModuleNode { Name = context.IDENTIFIER().GetText() };
+        foreach (var item in context.top_level())
+            moduleNode.Items.Add(Visit(item));
+        return moduleNode;
+    }
+
+    public override AstNode VisitName_token(RaceLangParser.Name_tokenContext context)
+    {
+        return new IdentifierExprNode { Name = context.GetText() };
+    }
+
+    public override AstNode VisitReturn_stmt(RaceLangParser.Return_stmtContext context)
+    {
+        return new ReturnNode { ValueNode = Visit(context.expression()) as ExprNode };
+    }
+
+    public override AstNode VisitShader_decl(RaceLangParser.Shader_declContext context)
+    {
+        var shaderNode = new ShaderDeclNode
+        {
+            Name = context.SHADER_AT().GetText(),
+            Type = Visit(context.shader_type()) as ShaderTypeNode,
+        };
+        return shaderNode;
+    }
+
+    public override AstNode VisitShader_type(RaceLangParser.Shader_typeContext context)
+    {
+        return new ShaderTypeNode { TypeName = context.GetText() };
+    }
+
+    public override AstNode VisitInit_field(RaceLangParser.Init_fieldContext context)
+    {
+        return new FieldValueNode
+        {
+            Name = context.IDENTIFIER().GetText(),
+            ValueNode = Visit(context.expression()) as ExprNode,
+        };
+    }
+
+    public override AstNode VisitLvalue(RaceLangParser.LvalueContext context)
+    {
+        return new LValueNode { Name = context.GetText() };
+    }
+
+    public override AstNode VisitParam(RaceLangParser.ParamContext context)
+    {
+        return new ParamNode
+        {
+            Name = context.IDENTIFIER().GetText(),
+            Type = Visit(context.type()) as TypeNode,
+        };
+    }
+
+    public override AstNode VisitParam_list(RaceLangParser.Param_listContext context)
+    {
+        var listNode = new ParamListNode();
+        foreach (var p in context.param())
+            listNode.Params.Add(Visit(p) as ParamNode);
+        return listNode;
+    }
+
+    public override AstNode VisitPostfix_op(RaceLangParser.Postfix_opContext context)
+    {
+        // Zależnie od postfixa, możesz tworzyć np. MemberAccessNode lub FunctionCallNode
+        return new PostfixOpNode { Text = context.GetText() };
+    }
+
+    public override AstNode VisitStruct_init(RaceLangParser.Struct_initContext context)
+    {
+        var structNode = new StructInitNode { TypeName = context.IDENTIFIER().GetText() };
+        foreach (var f in context.init_field())
+            structNode.Fields.Add(Visit(f) as FieldValueNode);
+        return structNode;
+    }
+    // alias
+    public override AstNode VisitStructInit(RaceLangParser.StructInitContext context)
+    {
+        return VisitStruct_init(context.struct_init());
+    }
+
+    public override AstNode VisitType(RaceLangParser.TypeContext context)
+    {
+        return new TypeNode { Name = context.GetText() };
     }
 
     // ------------ EXPRESSIONS ------------
@@ -211,13 +438,11 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     public override AstNode VisitUnaryMinusExpr(RaceLangParser.UnaryMinusExprContext ctx)
     {
         return Visit(ctx.expr4()) as UnaryExprNode;
-
     }
 
     public override AstNode VisitUnaryNotExpr(RaceLangParser.UnaryNotExprContext ctx)
     {
-       return Visit(ctx.expr4()) as UnaryExprNode;
-
+        return Visit(ctx.expr4()) as UnaryExprNode;
     }
 
     public override AstNode VisitIdExpr(RaceLangParser.IdExprContext ctx)
@@ -227,7 +452,9 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
 
     public override AstNode VisitLiteralExpr(RaceLangParser.LiteralExprContext ctx)
     {
-        return Visit(ctx.literal()) as LiteralExpr;
+        Console.WriteLine("visiting literal expr");
+
+        return new NumberLiteralExpr { Value = ctx.literal().GetText() };
     }
 
     // (expression)
@@ -239,41 +466,56 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     // ------------ LITERAL ------------
     public override AstNode VisitLiteral(RaceLangParser.LiteralContext ctx)
     {
+        Console.WriteLine("visiting literal");
         return null;
     }
 
     // ------------ POSTFIX ------------
     public override AstNode VisitPostfix_expr(RaceLangParser.Postfix_exprContext ctx)
     {
-        var result = Visit(ctx.primary_expr());
+        Console.WriteLine("visiting postfix expr");
 
-        if (ctx.postfix_op() != null)
+        var fnCall = new FunctionCallNode { Name = ctx.IDENTIFIER().GetText() };
+
+        Console.WriteLine("fn name " + fnCall.Name);
+
+        foreach (var op in ctx.postfix_op())
         {
-            foreach (var opCtx in ctx.postfix_op())
+            // fn call
+            if (op.GetText().StartsWith('('))
             {
-                if (opCtx.GetChild(0).GetText() == "(")
-                {
-                    if (opCtx.arg_list() != null)
-                    {
-                        foreach (var e in opCtx.arg_list().expression())
-                            Visit(e);
-                    }
-                    result = null;
-                }
-                else if (opCtx.GetChild(0).GetText() == ".")
-                {
-                    result = null;
-                }
+                fnCall.Arguments = op.GetText();
+
+                /*  foreach (var e in op.arg_list().expression())
+                 {
+                 } */
             }
         }
 
-        return null;
-    }
+        return fnCall;
 
-    public override AstNode VisitArg_list(RaceLangParser.Arg_listContext ctx)
-    {
-        foreach (var e in ctx.expression())
-            Visit(e);
-        return null;
+        // var result = Visit(ctx.primary_expr());
+
+        // if (ctx.postfix_op() != null)
+        // {
+        //     foreach (var opCtx in ctx.postfix_op())
+        //     {
+        //         if (opCtx.GetChild(0).GetText() == "(")
+        //         {
+        //             if (opCtx.arg_list() != null)
+        //             {
+        //                 foreach (var e in opCtx.arg_list().expression())
+        //                     Visit(e);
+        //             }
+        //             result = null;
+        //         }
+        //         else if (opCtx.GetChild(0).GetText() == ".")
+        //         {
+        //             result = null;
+        //         }
+        //     }
+        // }
+
+        // return null;
     }
 }

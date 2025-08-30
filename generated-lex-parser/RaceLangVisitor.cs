@@ -263,13 +263,6 @@ public interface IRaceLangVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitUnaryNotExpr([NotNull] RaceLangParser.UnaryNotExprContext context);
 	/// <summary>
-	/// Visit a parse tree produced by the <c>PostfixExpr</c>
-	/// labeled alternative in <see cref="RaceLangParser.expr4"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitPostfixExpr([NotNull] RaceLangParser.PostfixExprContext context);
-	/// <summary>
 	/// Visit a parse tree produced by <see cref="RaceLangParser.postfix_expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

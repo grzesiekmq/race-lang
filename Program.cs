@@ -65,23 +65,61 @@ class Program
             Console.WriteLine($"{t.Text} : {t.Type}");
         }
         */
-        var s = visitor.Visit(tree);
+        var topLevel = visitor.Visit(tree) as TopLevelNode;
 
-        Console.WriteLine("s " + s);
+        Console.WriteLine("node " + topLevel);
 
-        foreach (var itemCtx in tree.top_level_item())
+        // top level items
+
+        foreach (var node in topLevel.Items)
         {
-            if (itemCtx.struct_decl() != null)
+            if (node != null)
             {
-                string item = codegen.GenStructDecl(itemCtx.struct_decl());
-                sb.AppendLine(item);
-            }
-           else if(itemCtx.engine_instance() != null){
-                string item = codegen.GenEngineInstance(itemCtx.engine_instance());
-                Console.WriteLine("item " + item);
-                sb.AppendLine(item);
+                if (node is StructDeclNode structDecl)
+                {
+                    string item = codegen.GenStructDecl(structDecl);
+                    sb.AppendLine(item);
+                }
+                else if (node is EngineInstanceNode engineInstance)
+                {
+                    string item = codegen.GenEngineInstance(engineInstance);
+                    // Console.WriteLine("item " + item);
+                    sb.AppendLine(item);
+                }
+                else if (node is FnDeclNode fnDecl)
+                {
+                    string fnCode = codegen.GenFnDecl(fnDecl);
+
+                    sb.AppendLine(fnCode);
+
+                    foreach (var stmt in fnDecl.Statements)
+                    {
+                        if (stmt is VarDeclNode varDecl)
+                        {
+                            string varCode = codegen.GenVarDecl(varDecl);
+
+                            Console.WriteLine("varCode " + varCode);
+
+                            sb.AppendLine(varCode);
+                        }
+                        else if(stmt is FunctionCallNode fnCall){
+                            string fnCallCode = codegen.GenFnCall(fnCall);
+
+                            Console.WriteLine("fncall " + fnCallCode);
+
+                            Console.WriteLine(fnCall);
+
+                            sb.AppendLine(fnCallCode);
+                        }
+                    }
+                }
             }
         }
+
+
+
+
+
 
         // var addSub = (BinaryExprNode) visitor.Visit(expression);
         //  var left = (NumberLiteralExpr) addSub.Left;

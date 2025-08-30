@@ -83,6 +83,7 @@ type
     | 'vec2' | 'vec3' | 'vec4'
     | 'quat'
     | IDENTIFIER // custom type
+    | 'void'
     ;
 
 // system
@@ -99,7 +100,7 @@ engine_instance: ENGINE IDENTIFIER '{' field_value* '}'  ;
 track_instance: TRACK IDENTIFIER '{' field_value* '}' ;
 race_instance: RACE IDENTIFIER '{' field_value* '}' ;
 
-field_value: name_token ':' expression ';' ;
+field_value: name_token ':' primary_expr ';' ;
 
 // functions
 function_decl: FN IDENTIFIER '(' param_list? ')' ('->' type)? block ;
@@ -115,7 +116,7 @@ statement
     | return_stmt
     ;
 
-var_decl_stmt: LET (MUT)? IDENTIFIER ':' type ('=' expression)? ';' ;
+var_decl_stmt: LET (MUT)? IDENTIFIER ':' type ('=' primary_expr)? ';' ;
 
 // lvalue: dopuszcza kropkowanie i nazwę mogącą być keywordiem
 lvalue: name_token ('.' name_token)* ;
@@ -127,7 +128,7 @@ expression_stmt: expression ';' ;
 return_stmt: RETURN expression? ';' ;
 
 // expressions (precedence)
-expression: expr1 ;
+expression: expr1 | postfix_expr | primary_expr;
 
 expr1
     : expr1 op=('*'|'/') expr2   # MulDivExpr
@@ -147,11 +148,12 @@ expr3
 expr4
     : '-' expr4                # UnaryMinusExpr
     | '!' expr4                # UnaryNotExpr
-    | postfix_expr             # PostfixExpr
+                 
     ;
 
 // postfix i call / member
-postfix_expr: primary_expr (postfix_op)* ;
+postfix_expr: IDENTIFIER (postfix_op)* ;
+// member access or fn call
 postfix_op: '.' IDENTIFIER | '(' arg_list? ')' ;
 arg_list: expression (',' expression)* ;
 

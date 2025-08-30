@@ -418,18 +418,6 @@ public interface IRaceLangListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitUnaryNotExpr([NotNull] RaceLangParser.UnaryNotExprContext context);
 	/// <summary>
-	/// Enter a parse tree produced by the <c>PostfixExpr</c>
-	/// labeled alternative in <see cref="RaceLangParser.expr4"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void EnterPostfixExpr([NotNull] RaceLangParser.PostfixExprContext context);
-	/// <summary>
-	/// Exit a parse tree produced by the <c>PostfixExpr</c>
-	/// labeled alternative in <see cref="RaceLangParser.expr4"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void ExitPostfixExpr([NotNull] RaceLangParser.PostfixExprContext context);
-	/// <summary>
 	/// Enter a parse tree produced by <see cref="RaceLangParser.postfix_expr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
