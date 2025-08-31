@@ -33,6 +33,47 @@ class Program
         }
     }
 
+    static void GccCall(string cFile, string outputFile)
+    {
+        // Wywołanie GCC
+        var gcc = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "gcc",
+                Arguments = $"{cFile} -o {outputFile}",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            },
+        };
+
+        gcc.Start();
+
+        // Asynchronicznie odczytujemy stdout/stderr
+        string stdout = gcc.StandardOutput.ReadToEnd();
+        string stderr = gcc.StandardError.ReadToEnd();
+
+        // Czekamy aż GCC zakończy
+        gcc.WaitForExit();
+
+        if (gcc.ExitCode != 0)
+        {
+            Console.WriteLine("Compilation failed:");
+            Console.WriteLine(stderr);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(stdout))
+            Console.WriteLine(stdout);
+
+        if (!string.IsNullOrEmpty(stderr))
+            Console.WriteLine(stderr);
+
+        Console.WriteLine($"Binary created: {outputFile}");
+    }
+
     static void Main(string[] args)
     {
         var sb = new StringBuilder();
@@ -55,7 +96,7 @@ class Program
 
         // Console.WriteLine(tree.ToStringTree());
 
-        // PrintTree(tree, parser);
+        PrintTree(tree, parser);
 
         /*
         tokens.Fill();
@@ -66,6 +107,10 @@ class Program
         }
         */
         var topLevel = visitor.Visit(tree) as TopLevelNode;
+
+        Console.WriteLine("AST ----------------------------");
+        AstPrinter.Print(topLevel);
+        Console.WriteLine("AST end -------------------------");
 
         Console.WriteLine("node " + topLevel);
 
@@ -91,35 +136,13 @@ class Program
                     string fnCode = codegen.GenFnDecl(fnDecl);
 
                     sb.AppendLine(fnCode);
-
-                    foreach (var stmt in fnDecl.Statements)
-                    {
-                        if (stmt is VarDeclNode varDecl)
-                        {
-                            string varCode = codegen.GenVarDecl(varDecl);
-
-                            Console.WriteLine("varCode " + varCode);
-
-                            sb.AppendLine(varCode);
-                        }
-                        else if(stmt is FunctionCallNode fnCall){
-                            string fnCallCode = codegen.GenFnCall(fnCall);
-
-                            Console.WriteLine("fncall " + fnCallCode);
-
-                            Console.WriteLine(fnCall);
-
-                            sb.AppendLine(fnCallCode);
-                        }
-                    }
                 }
             }
+            else
+            {
+                Console.WriteLine("node is null!");
+            }
         }
-
-
-
-
-
 
         // var addSub = (BinaryExprNode) visitor.Visit(expression);
         //  var left = (NumberLiteralExpr) addSub.Left;
@@ -142,8 +165,9 @@ class Program
         // string fieldsCode = string.Join("\n", structDecl.Fields.Select(f =>
         // $"{MapType(f.Type)} {f.Name};"
         // ));
-
+        Console.WriteLine("--------------------------------");
         Console.WriteLine("item " + sb.ToString());
+        Console.WriteLine("--------------------------------");
 
         // hardcoded temporarily for reference
         // to convert to dynamic code
@@ -196,7 +220,15 @@ int main() {
 
         var cFile = "test.c";
         var outputFile = args[2];
-        File.WriteAllText(cFile, sb.ToString());
+
+        if (codegen.include)
+        {
+            File.WriteAllText(cFile, codegen.GenIncludeIO() + sb.ToString());
+        }
+        else
+        {
+            File.WriteAllText(cFile, sb.ToString());
+        }
 
         // Sprawdzenie, czy plik C istnieje
         if (!File.Exists(cFile))
@@ -205,42 +237,6 @@ int main() {
             return;
         }
 
-        // Wywołanie GCC
-        var gcc = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "gcc",
-                Arguments = $"{cFile} -o {outputFile}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            },
-        };
-
-        gcc.Start();
-
-        // Asynchronicznie odczytujemy stdout/stderr
-        string stdout = gcc.StandardOutput.ReadToEnd();
-        string stderr = gcc.StandardError.ReadToEnd();
-
-        // Czekamy aż GCC zakończy
-        gcc.WaitForExit();
-
-        if (gcc.ExitCode != 0)
-        {
-            Console.WriteLine("Compilation failed:");
-            Console.WriteLine(stderr);
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(stdout))
-            Console.WriteLine(stdout);
-
-        if (!string.IsNullOrEmpty(stderr))
-            Console.WriteLine(stderr);
-
-        Console.WriteLine($"Binary created: {outputFile}");
+        GccCall(cFile, outputFile);
     }
 }

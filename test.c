@@ -1,3 +1,4 @@
+#include <stdio.h>
 typedef struct{
 int horsepower;
 float torque;
@@ -9,7 +10,10 @@ Engine myEngine = {
 };
 
 void main(){
-}
+int torque = 500;
 
-float torque = 500;
+printf("torque: %d\n", torque);
+printf("HP: %d\n", myEngine.horsepower);
+printf("engine torque: %d\n", myEngine.torque);
+}
 

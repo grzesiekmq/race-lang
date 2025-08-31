@@ -18,7 +18,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
         {
             Visit(module);
         }
-        return null;
+        return base.VisitProgram(ctx);
     }
 
     // ------------ TOP LEVEL ------------
@@ -94,7 +94,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
 
         foreach (var stmt in ctx.statement())
             Visit(stmt);
-        return null;
+        return base.VisitSystem_decl(ctx);
     }
 
     // ------------ INSTANCES ------------
@@ -190,7 +190,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
             };
             return varDecl;
         }
-        return null;
+        return base.VisitVar_decl_stmt(ctx);
     }
 
     public override AstNode VisitAssignment(RaceLangParser.AssignmentContext ctx)
@@ -214,20 +214,22 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
             return Visit(ctx.expression_stmt()) as ExprStmtNode;
         if (ctx.return_stmt() != null)
             return Visit(ctx.return_stmt()) as ReturnNode;
-        return null;
+
+        return base.VisitStatement(ctx);
     }
 
-    public override AstNode VisitExpression_stmt(
-        [NotNull] RaceLangParser.Expression_stmtContext ctx
-    )
+    // VisitExpression_stmt
+    public override AstNode VisitExpression_stmt(RaceLangParser.Expression_stmtContext ctx)
     {
         var exprNode = Visit(ctx.expression());
 
         if (exprNode is FunctionCallNode fnCall)
         {
-            return fnCall;
+            // opakuj w ExprStmtNode
+            return new ExprStmtNode { Expression = fnCall };
         }
-        return new ExprStmtNode { Expression = exprNode as ExprNode };
+
+        return exprNode; // np. inne wyrażenia
     }
 
     public override AstNode VisitExpression([NotNull] RaceLangParser.ExpressionContext ctx)
@@ -239,7 +241,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
         if (ctx.primary_expr() != null)
             return Visit(ctx.primary_expr());
 
-        return null;
+        return base.VisitExpression(ctx);
     }
 
     public override AstNode VisitArray_expr(RaceLangParser.Array_exprContext context)
@@ -265,8 +267,9 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
 
         for (int i = 1; i < context.IDENTIFIER().Length; i++)
         {
-            
-            listNode.Components.Add(new IdentifierExprNode{Name = context.IDENTIFIER(i).GetText()}); // lub konkretny typ
+            listNode.Components.Add(
+                new IdentifierExprNode { Name = context.IDENTIFIER(i).GetText() }
+            ); // lub konkretny typ
         }
         return listNode;
     }
@@ -291,11 +294,11 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
         var forInNode = new ForInNode
         {
             IteratorName = context.IDENTIFIER().GetText(),
-            Collection = Visit(context.expression()) as ExprNode
-
+            Collection = Visit(context.expression()) as ExprNode,
         };
 
-        foreach(var stmt in context.block().statement()){
+        foreach (var stmt in context.block().statement())
+        {
             forInNode.Body.Add(Visit(stmt) as StatementNode);
         }
 
@@ -308,12 +311,12 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
         {
             Condition = Visit(context.expression()) as ExprNode,
             ThenBlock = Visit(context.block(0)) as BlockNode,
-        ElseBlock = Visit(context.block(1)) as BlockNode
+            ElseBlock = Visit(context.block(1)) as BlockNode,
         };
 
-            
         return ifNode;
     }
+
     // alias
     public override AstNode VisitArrayExpr(RaceLangParser.ArrayExprContext context)
     {
@@ -402,6 +405,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
             structNode.Fields.Add(Visit(f) as FieldValueNode);
         return structNode;
     }
+
     // alias
     public override AstNode VisitStructInit(RaceLangParser.StructInitContext context)
     {
@@ -418,7 +422,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     {
         Visit(ctx.expr1());
         Visit(ctx.expr2());
-        return null;
+        return base.VisitMulDivExpr(ctx);
     }
 
     public override AstNode VisitPassUp1(RaceLangParser.PassUp1Context ctx) => Visit(ctx.expr2());
@@ -427,7 +431,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     {
         Visit(ctx.expr2());
         Visit(ctx.expr3());
-        return null;
+        return base.VisitAddSubExpr(ctx);
     }
 
     public override AstNode VisitPassUp2(RaceLangParser.PassUp2Context ctx) => Visit(ctx.expr3());
@@ -436,7 +440,7 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     {
         Visit(ctx.expr3());
         Visit(ctx.expr4());
-        return null;
+        return base.VisitCompareExpr(ctx);
     }
 
     public override AstNode VisitPassUp3(RaceLangParser.PassUp3Context ctx) => Visit(ctx.expr4());
@@ -453,14 +457,21 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
 
     public override AstNode VisitIdExpr(RaceLangParser.IdExprContext ctx)
     {
-        return Visit(ctx.IDENTIFIER()) as IdentifierExprNode;
+        Console.WriteLine("visiting ID expr");
+
+        if (ctx.IDENTIFIER() != null)
+        {
+            var idExpr = new IdentifierExprNode { Name = ctx.IDENTIFIER().GetText() };
+            return idExpr;
+        }
+        return base.VisitIdExpr(ctx);
     }
 
     public override AstNode VisitLiteralExpr(RaceLangParser.LiteralExprContext ctx)
     {
         Console.WriteLine("visiting literal expr");
 
-        return new NumberLiteralExpr { Value = ctx.literal().GetText() };
+        return VisitLiteral(ctx.literal());
     }
 
     // (expression)
@@ -472,56 +483,72 @@ class AstVisitor : RaceLangBaseVisitor<AstNode>
     // ------------ LITERAL ------------
     public override AstNode VisitLiteral(RaceLangParser.LiteralContext ctx)
     {
-        Console.WriteLine("visiting literal");
-        return null;
+        if (ctx.NUMBER() != null)
+        {
+            Console.WriteLine("visiting number literal");
+
+            return new NumberLiteralExpr { Value = ctx.NUMBER().GetText() };
+        }
+        else if (ctx.STRING() != null)
+        {
+            Console.WriteLine("visiting string literal");
+
+            return new StringLiteralExpr { Value = ctx.STRING().GetText() };
+        }
+        else if (ctx.BOOL() != null)
+        {
+            Console.WriteLine("visiting bool literal");
+
+            return new BoolLiteralExpr { Value = ctx.BOOL().GetText() };
+        }
+
+        return base.VisitLiteral(ctx);
     }
 
     // ------------ POSTFIX ------------
     public override AstNode VisitPostfix_expr(RaceLangParser.Postfix_exprContext ctx)
     {
-        Console.WriteLine("visiting postfix expr");
-
-        var fnCall = new FunctionCallNode { Name = ctx.IDENTIFIER().GetText() };
-
-        Console.WriteLine("fn name " + fnCall.Name);
+        // baza: IDENTIFIER
+        ExprNode result = new IdentifierExprNode { Name = ctx.IDENTIFIER().GetText() };
 
         foreach (var op in ctx.postfix_op())
         {
-            // fn call
-            if (op.GetText().StartsWith('('))
+            // member access: '.' IDENTIFIER
+            if (op.IDENTIFIER() != null)
             {
-                fnCall.Arguments = op.GetText();
+                result = new MemberAccessNode
+                {
+                    Target = result,
+                    Member = op.IDENTIFIER().GetText(),
+                };
+            }
+            else
+            {
+                // funkcja: '(' arg_list? ')'
+                var call = new FunctionCallNode
+                {
+                    // jeśli potrzebujesz nazwy, spróbuj wziąć z identyfikatora;
+                    // dla wywołań typu obj.method(...) i tak zwykle nie używasz Name,
+                    // tylko generujesz z Callee/Target.
+                    Name = (result as IdentifierExprNode)?.Name,
+                    // jeżeli masz w typie FunctionCallNode pole na callee/target, ustaw tutaj:
+                    // Callee = result
+                };
 
-                /*  foreach (var e in op.arg_list().expression())
-                 {
-                 } */
+                if (op.arg_list() != null)
+                {
+                    foreach (var e in op.arg_list().expression())
+                    {
+                        var arg = Visit(e) as ExprNode;
+                        if (arg != null)
+                            call.Arguments.Add(arg);
+                    }
+                }
+
+                result = call; // kontynuujemy łańcuch (np. foo()(...) albo foo().bar)
             }
         }
 
-        return fnCall;
-
-        // var result = Visit(ctx.primary_expr());
-
-        // if (ctx.postfix_op() != null)
-        // {
-        //     foreach (var opCtx in ctx.postfix_op())
-        //     {
-        //         if (opCtx.GetChild(0).GetText() == "(")
-        //         {
-        //             if (opCtx.arg_list() != null)
-        //             {
-        //                 foreach (var e in opCtx.arg_list().expression())
-        //                     Visit(e);
-        //             }
-        //             result = null;
-        //         }
-        //         else if (opCtx.GetChild(0).GetText() == ".")
-        //         {
-        //             result = null;
-        //         }
-        //     }
-        // }
-
-        // return null;
+        return result;
     }
 }

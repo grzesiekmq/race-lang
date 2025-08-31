@@ -24,14 +24,14 @@ struct Engine {
 // print engine params
 fn main() -> void{
     // var decl
-    let torque : float = 500Nm;
+    let torque : i32 = 500Nm;
     // let result : string = myEngine.horsepower + myEngine.torque;
     
     // fn call
-    println(torque);
+    println("torque: ", torque);
 
-    // println(myEngine.horsepower);
-    // println(myEngine.torque);
+    println("HP: ", myEngine.horsepower);
+    println("engine torque: ", myEngine.torque);
 }
 
 

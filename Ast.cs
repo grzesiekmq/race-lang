@@ -19,8 +19,11 @@ class TopLevelNode : AstNode
 }
 
 // --- Literals ---
-class LiteralExpr : ExprNode {
+class LiteralExpr : ExprNode
+{
+    public string Value { get; set; }
 
+    public override string ToString() => $"LiteralExpr({Value})";
 }
 
 class NumberLiteralExpr : LiteralExpr
@@ -35,12 +38,10 @@ class StringLiteralExpr : LiteralExpr
 
 class BoolLiteralExpr : LiteralExpr
 {
-    public bool Value { get; set; }
+    public string Value { get; set; }
 }
 
-class ParenExpr : ExprNode{
-
-}
+class ParenExpr : ExprNode { }
 
 // --- Identifiers ---
 class IdentifierExprNode : ExprNode
@@ -76,7 +77,7 @@ abstract class InstanceNode : AstNode
 {
     public string Kind { get; set; }
     public string Name { get; set; }
-    public List<FieldValueNode> Fields { get;set; } = new();
+    public List<FieldValueNode> Fields { get; set; } = new();
 }
 
 class CarInstanceNode : InstanceNode { }
@@ -97,7 +98,7 @@ class FieldValueNode : AstNode
 class StructDeclNode : TopLevelNode
 {
     public string Name { get; set; }
-    public List<FieldDeclNode> Fields { get;set; } = new();
+    public List<FieldDeclNode> Fields { get; set; } = new();
 
     public override string ToString()
     {
@@ -122,17 +123,13 @@ class FieldDeclNode : AstNode
     }
 }
 
-class FnDeclNode : TopLevelNode{
-
+class FnDeclNode : TopLevelNode
+{
     public string Name { get; set; }
     public List<AstNode>? Params { get; set; } = new();
     public List<StatementNode>? Statements { get; set; } = new();
     public string? Type { get; set; }
 }
-
-
-
-
 
 // --- Variable Declarations ---
 class VarDeclNode : StatementNode
@@ -160,100 +157,108 @@ class SystemDeclNode : AstNode
     public bool IsParallel { get; set; }
 }
 
-class StatementNode : AstNode {
+class StatementNode : AstNode { }
 
- }
-
-class IfNode : StatementNode{
+class IfNode : StatementNode
+{
     public ExprNode Condition { get; set; }
     public BlockNode ThenBlock { get; set; }
     public BlockNode ElseBlock { get; set; }
 }
 
-class ForNode : StatementNode{
+class ForNode : StatementNode
+{
     public StatementNode Init { get; set; }
     public ExprNode Condition { get; set; }
     public StatementNode Update { get; set; }
     public BlockNode Body { get; set; }
 }
 
-class ForInNode: StatementNode{
-    public string IteratorName { get; set; }        // nazwa zmiennej iterującej
-    public ExprNode Collection { get; set; }        // wyrażenie po którym iterujemy
+class ForInNode : StatementNode
+{
+    public string IteratorName { get; set; } // nazwa zmiennej iterującej
+    public ExprNode Collection { get; set; } // wyrażenie po którym iterujemy
     public List<StatementNode> Body { get; set; } = new();
 }
 
-class ExprStmtNode : StatementNode{
+class ExprStmtNode : StatementNode
+{
     public ExprNode Expression { get; set; }
 }
 
-class ReturnNode : StatementNode{
+class ReturnNode : StatementNode
+{
     public ExprNode ValueNode { get; set; }
 }
 
-class ArrayExprNode :AstNode {
+class ArrayExprNode : AstNode
+{
     public List<AstNode> Elements { get; set; } = new();
 }
 
-class BlockNode : AstNode {
+class BlockNode : AstNode
+{
     public List<AstNode> Statements { get; set; } = new();
-
-}
-class ComponentListNode :AstNode{
-        public List<AstNode> Components { get; set; } = new();
-
 }
 
-class ImportNode :AstNode{
+class ComponentListNode : AstNode
+{
+    public List<AstNode> Components { get; set; } = new();
+}
+
+class ImportNode : AstNode
+{
     public string ModuleName;
 }
 
-class ModuleNode :AstNode{
+class ModuleNode : AstNode
+{
     public string Name;
-        public List<AstNode> Items { get; set; } = new();
-
+    public List<AstNode> Items { get; set; } = new();
 }
 
-class ShaderDeclNode :AstNode{
+class ShaderDeclNode : AstNode
+{
     public string Name;
     public ShaderTypeNode Type;
 }
 
-class ShaderTypeNode :AstNode{
+class ShaderTypeNode : AstNode
+{
     public string TypeName;
 }
 
-class LValueNode :AstNode{
+class LValueNode : AstNode
+{
     public string Name;
 }
 
-class ParamNode :AstNode{
+class ParamNode : AstNode
+{
     public string Name;
     public TypeNode Type;
 }
 
-class TypeNode :AstNode{
+class TypeNode : AstNode
+{
     public string Name;
-
 }
 
-class ParamListNode :AstNode{
-        public List<AstNode> Params { get; set; } = new();
-    
+class ParamListNode : AstNode
+{
+    public List<AstNode> Params { get; set; } = new();
 }
 
-class PostfixOpNode :AstNode{
+class PostfixOpNode : AstNode
+{
     public string Text;
 }
 
-class StructInitNode :AstNode{
+class StructInitNode : AstNode
+{
     public string TypeName;
-            public List<AstNode> Fields { get; set; } = new();
-
+    public List<AstNode> Fields { get; set; } = new();
 }
-
-
-
 
 class MemberAccessNode : ExprNode
 {
@@ -261,12 +266,11 @@ class MemberAccessNode : ExprNode
     public string Member { get; set; }
 }
 
-class FunctionCallNode : StatementNode
+class FunctionCallNode : ExprNode
 {
     public string Name { get; set; }
-    // public List<ExprNode> Arguments { get; set; } = new();
 
-    public string Arguments { get; set; }
+    public List<ExprNode> Arguments { get; set; } = new();
 
     public override string ToString()
     {

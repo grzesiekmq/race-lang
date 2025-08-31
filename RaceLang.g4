@@ -86,7 +86,7 @@ type
     | 'void'
     ;
 
-// system
+// ECSystem
 system_decl
     : 'system' IDENTIFIER '(' param_list? ')' QUERY '{' '}' (PARALLEL)? '{' statement* '}'
     ;

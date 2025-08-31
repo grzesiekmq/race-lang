@@ -5,6 +5,12 @@ using Generated;
 class CodeGen
 {
     string structDeclName;
+    public bool include;
+
+    public string GenIncludeIO()
+    {
+        return "#include <stdio.h>\n";
+    }
 
     public string GenStructDecl(StructDeclNode structDecl)
     {
@@ -20,17 +26,17 @@ class CodeGen
         return sb.ToString();
     }
 
+    string MapType(string raceType) =>
+        raceType switch
+        {
+            "i32" => "int",
+            "f32" => "float",
+            "string" => "char *",
+            _ => "unknown type",
+        };
+
     public string GenFieldDecl(FieldDeclNode fieldDecl)
     {
-        string MapType(string raceType) =>
-            raceType switch
-            {
-                "i32" => "int",
-                "f32" => "float",
-                "string" => "char *",
-                _ => "unknown type",
-            };
-
         return $"{MapType(fieldDecl.Type)} {fieldDecl.Name};";
     }
 
@@ -108,10 +114,37 @@ class CodeGen
         var sb = new StringBuilder();
 
         sb.AppendLine($"{fnDecl.Type} {fnDecl.Name}(){{");
-
+        foreach (var stmt in fnDecl.Statements)
+        {
+            if (stmt is VarDeclNode varDecl)
+            {
+                sb.AppendLine(GenVarDecl(varDecl));
+            }
+            else if (stmt is ExprStmtNode exprStmt)
+            {
+                sb.AppendLine(GenExpr(exprStmt.Expression));
+            }
+        }
         sb.AppendLine("}");
 
         return sb.ToString();
+    }
+
+    public string GenExpr(ExprNode exprNode)
+    {
+        switch (exprNode)
+        {
+            case FunctionCallNode fnCall:
+                return GenFnCall(fnCall);
+            case MemberAccessNode memberAccess:
+
+                return GenMemberAccess(memberAccess);
+            case IdentifierExprNode idExpr:
+            {
+                return idExpr.Name;
+            }
+        }
+        return "";
     }
 
     /* char* result = "test"; */
@@ -119,23 +152,88 @@ class CodeGen
     {
         var sb = new StringBuilder();
         var value = (varDecl.Initializer as NumberLiteralExpr).Value;
-        if(value.EndsWith("Nm")){
+        if (value.EndsWith("Nm"))
+        {
             value = value.Remove(value.IndexOf("Nm"));
 
-        sb.AppendLine($"{varDecl.Type} {varDecl.Name} = {value};");
+            sb.AppendLine($"{MapType(varDecl.Type)} {varDecl.Name} = {value};");
         }
 
         return sb.ToString();
     }
-    public string GenFnCall(FunctionCallNode fnCall){
 
-        string str = $"{fnCall.Name}{fnCall.Arguments};";
+    public string GenFnCall(FunctionCallNode fnCall)
+    {
+        Console.WriteLine("generating fn call");
 
-/*         foreach(var arg in fnCall.Arguments){
+        var sb = new StringBuilder();
+        if (fnCall.Name == "println")
+        {
+            Console.WriteLine("detected println");
 
-        str += arg;
+            string str = "";
+            include = true;
+
+            // as reference: printf("torque: %d\n", torque);
+
+            for (int i = 0; i < fnCall.Arguments.Count; i++)
+            {
+                Console.WriteLine("arg type " + fnCall.Arguments[i]);
+            }
+
+            var firstArg = fnCall.Arguments[0];
+
+            ExprNode secondArg = null;
+
+            if (fnCall.Arguments.Count > 1)
+            {
+                secondArg = fnCall?.Arguments[1];
+            }
+
+            // torque: in format specifier
+            if (firstArg != null && firstArg is StringLiteralExpr strLit)
+            {
+                string firstArgValue = strLit.Value.Trim('"');
+
+                Console.WriteLine("1st arg: " + firstArgValue);
+
+                str += $"printf(\"{firstArgValue}";
+
+                str += "%d";
+
+                str += "\\n\"";
+            }
+
+            Console.WriteLine("fn name, args count: " + fnCall.Name + " " + fnCall.Arguments.Count);
+
+            if (secondArg == null)
+            {
+                Console.WriteLine("second arg null");
+            }
+            Console.WriteLine("second arg: " + secondArg);
+
+            // torque
+
+            str += $", {GenExpr(secondArg)}";
+
+            str += ");";
+
+            return str;
         }
-        str += ")";
- */        return str;
+        // string str = $"{fnCall.Name}({fnCall.Arguments});";
+
+        /*         foreach(var arg in fnCall.Arguments){
+        
+                str += arg;
+                }
+                str += ")";
+         */
+        return $"{fnCall.Name}({fnCall.Arguments.ToString()})";
+    }
+
+    public string GenMemberAccess(MemberAccessNode memberAccess)
+    {
+        string targetValue = (memberAccess.Target as IdentifierExprNode).Name;
+        return $"{targetValue}.{memberAccess.Member}";
     }
 }
