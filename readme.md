@@ -1,204 +1,202 @@
 
 
 
----
+# RaceLang
 
-Race Language (race) — v0.2 Draft Specification (Racing Game Engine Focus)
+**RaceLang** is an experimental programming language designed for modeling racing-related objects such as cars, engines, tracks, and races. The project is currently in early development and focuses on creating an **Abstract Syntax Tree (AST)** and a **minimal code generation system** targeting C.  
 
-> A compiled, data-oriented language designed specifically for racing game engines — real-time physics, high-performance rendering, and deterministic simulation.
-
-
-
+RaceLang is intended as a learning and prototyping platform for language design, AST manipulation, and code generation.
 
 ---
 
-1) Design Goals & Philosophy
+## Features
 
-Racing Simulation First. Tailored for physics engines, rendering loops, AI, and networking in competitive racing games.
+### Abstract Syntax Tree (AST)
+RaceLang uses a rich AST representation to model the language’s structure. Current nodes include:
 
-Deterministic Physics. Fixed-step loops, precise floating-point and fixed-point math, reproducibility across machines.
+- **Literals**: number, string, boolean  
+- **Identifiers** and variables  
+- **Unary and binary expressions**  
+- **Function declarations and calls**  
+- **Struct declarations** and **instances** (Car, Engine, Track, Race)  
+- **System declarations** (experimental)  
+- **Statements**: `if`, `for` loops (traditional and `for-in`), `return`  
+- **Blocks** and **component lists**  
 
-High-Performance Rendering. First-class GPU API bindings (Vulkan, DirectX, Metal) with minimal boilerplate.
+### AST Visitor
+A visitor pattern is implemented for traversing the AST, which allows:
 
-Data-Oriented Design. Built-in ECS and SoA, optimized for cache and SIMD.
+- Inspection of AST nodes  
+- Transformation of nodes  
+- Code generation  
 
-Predictable Memory. No GC, explicit allocation, arenas for frame-based workloads.
+### Minimal C Code Generation
+RaceLang currently supports generating C code for:
 
-Engine Interop. Easy C/C++ ABI, direct embedding into custom engines.
+- **Struct declarations**  
+- **Struct instances** with initialization  
+- **Basic type mapping** from RaceLang types to C types:
+  - `i32` → `int`
+  - `f32` → `float`
+  - `string` → `char*`  
+- **Function declarations**  
+- **Variable declarations** and simple expressions  
+- **Function calls**, including a built-in `println` mapped to `printf`  
 
+#### Example: Struct Declaration in RaceLang
+```rs
+struct Engine {
+    horsepower: i32;
+    torque: f32;
+};
+```
 
+Generated C code:
 
----
+```c
+typedef struct {
+    int horsepower;
+    float torque;
+} Engine;
+```
 
-2) Toolchain Overview
+#### Example: Instance Initialization
 
-Compiler: racec with Cranelift (fast iteration) and LLVM (optimized release) backends.
+```rs
+Engine myEngine = {
+    horsepower: 450,
+    torque: 550.5
+};
+```
 
-Package Manager: racem, oriented around engine modules (physics, rendering, input, audio).
+Generated C code:
 
-Build Scripts: build.race — designed for asset pipelines (shaders, meshes, car data).
+```c
+Engine myEngine = {
+    .horsepower = 450,
+    .torque = 550.5
+};
+```
 
-Profiler & Debugger: built-in frame timeline inspector.
+#### Example: Function Call
 
+```rs
+println("Horsepower: ", myEngine.horsepower);
+```
 
+Generated C code:
 
----
-
-3) Language Surface — Racing Engine Focus
-
-3.1 Game Loop
-
-fn main() {
-    let mut engine = Engine::new()
-    engine.run(|dt| {
-        physics_step(dt)
-        render_frame(dt)
-        input_poll()
-    })
-}
-
-3.2 Physics Primitives
-
-struct RigidBody { mass: f32, vel: vec3, pos: vec3 }
-struct Wheel { radius: f32, grip: f32 }
-struct Engine { torque_curve: fn(f32)->f32, rpm: f32 }
-
-system Physics(dt: f32) query { RigidBody, Wheel, Engine } parallel {
-    let tq = Engine.torque_curve(Engine.rpm)
-    RigidBody.vel.x += tq * dt / RigidBody.mass
-    RigidBody.pos += RigidBody.vel * dt
-}
-
-3.3 Rendering Integration
-
-@shader(vertex)
-fn vs_main(input: VertexInput) -> VertexOutput { /* GLSL-like */ }
-
-@shader(fragment)
-fn fs_main(input: VertexOutput) -> vec4 { return vec4(1,0,0,1) }
-
-fn render_frame(dt: f32) {
-    let pass = gfx.begin_pass(clear_color=vec4(0,0,0,1))
-    pass.draw(mesh=car_mesh, material=paint)
-    gfx.end_pass(pass)
-}
-
-
----
-
-4) Core Types (Racing Focus)
-
-f32, f64 (fast math); q24.8 fixed-point for deterministic physics.
-
-vec2, vec3, vec4, quat, mat4 — GPU-friendly.
-
-transform type (pos: vec3, rot: quat, scale: vec3).
-
-color type (rgba8, linear_f32).
-
-mesh, texture, shader, pipeline — engine-native resources.
-
-entity / component / system — ECS primitives.
-
-
+```c
+printf("Horsepower: %d\n", myEngine.horsepower);
+```
 
 ---
 
-5) ECS Racing Extensions
+## Current Project Status
 
-Entities: cars, wheels, track segments.
-
-Components: Engine, Suspension, Tire, TrackSurface.
-
-Systems: physics update, rendering, input handling, AI racing lines.
-
-Deterministic scheduler ensures consistent simulation between machines.
-
-
+* **AST**: Almost complete, supports most language constructs
+* **AST Visitor**: Fully implemented with debugging support
+* **Codegen**: Minimal but functional for structs, instances, functions, and simple expressions
+* **Parser**: Based on ANTLR, supports the current syntax of RaceLang
 
 ---
 
-6) Concurrency Model
+## Roadmap
 
-Frame Jobs: tasks scheduled in engine.run() tick.
-
-Parallel Systems: auto-batched ECS queries.
-
-GPU Async: explicit command buffers; CPU/GPU sync points visible.
-
-Networking: lockstep mode with deterministic inputs for multiplayer racing.
-
-
+* Extend type mapping and support for more RaceLang types
+* Implement full expression evaluation in codegen
+* Support complex function calls and member access chains
+* Add testing framework for AST and code generation
+* Develop module system and imports support
+* Expand language features (loops, conditionals, and systems)
 
 ---
 
-7) Rendering & Shaders
+## Requirements
 
-Built-in shader DSL (@shader) compiled to SPIR-V / DXIL / MSL.
-
-pipeline objects created in Race code, strongly typed.
-
-Hot-reload of shaders and pipelines during development.
-
-
+* **.NET 8 SDK** (or later)
+* **Antlr4.Runtime**
+* Standard C# libraries: `System.Text`, `System.Collections.Generic`, etc.
 
 ---
 
-8) Memory & Frame Management
+## Getting Started
 
-Frame Allocator: fast arena allocator reset every frame.
+Clone the repository and build it using .NET CLI:
 
-Persistent Pools: meshes, textures, car data.
+```bash
+git clone https://github.com/grzesiekmq/race-lang.git
+cd race-lang
+dotnet build
+dotnet run
+```
 
-No hidden heap. Explicit alloc / free or RAII via Drop trait.
+You can then parse RaceLang source files and generate C code using the provided AST and CodeGen classes.
 
 
+
+## 💻 Usage Example
+
+After building `racec`, you can compile RaceLang source files to C code with:
+
+```bash
+# Compile a single RaceLang file
+racec test.race -o test
+
+
+# then run 
+./test
+```
+
+Example  
+Given a RaceLang source file engine.race:
+
+```rs
+
+struct Engine {
+    horsepower: i32;
+    torque: f32;
+};
+
+Engine myEngine = {
+    horsepower: 450,
+    torque: 550.5
+};
+
+println("Horsepower: ", myEngine.horsepower);
+```
+
+Running:
+
+```bash
+
+racec engine.race -o engine
+
+./engine
+```
+
+Will output:
+
+```makefile
+
+Horsepower: 450
+```
+
+This demonstrates how racec transforms RaceLang code into valid C code, ready to be compiled and executed.
 
 ---
 
-9) Example: Racing Car Engine
+## Contributing
 
-struct Car {
-    engine: Engine,
-    wheels: [4]Wheel,
-    body: RigidBody,
-}
-
-system UpdateCar(dt: f32) query { Car } parallel {
-    let tq = Car.engine.torque_curve(Car.engine.rpm)
-    for w in Car.wheels {
-        apply_torque(w, tq, dt)
-    }
-    Car.body.pos += Car.body.vel * dt
-}
-
+Contributions are welcome! Currently, the project is experimental, and any improvements to the AST, visitor, or code generation are highly appreciated.
 
 ---
 
-10) Roadmap (Racing Engine Alpha)
+## License
 
-M0 (Weeks 1–4): Lexer, parser, AST, ECS core, frame loop primitive.
-M1 (Weeks 5–8): Physics primitives (RigidBody, Wheel, Engine), deterministic fixed-step scheduler.
-M2 (Weeks 9–12): Rendering API with GPU resource types, shader DSL → SPIR-V backend.
-M3 (Weeks 13–16): Networking (lockstep racing), input, asset pipeline (meshes, car data).
-M4 (Weeks 17–20): Demo: minimal racing engine (physics + rendering + input).
-
-
----
-
-11) Naming & Aesthetics
-
-File extension: .race
-
-Module layout mirrors engine subsystems: physics.race, render.race, ecs.race.
-
-Formatter defaults to engine-style readability.
+This project is open-source under Unlicense
 
 
 
----
-
-Status: This version focuses Race as a domain-specific systems language for racing game engines — not general purpose like Rust, but tuned for physics/rendering workloads.
 
 
----
